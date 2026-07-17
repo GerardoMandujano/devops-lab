@@ -73,17 +73,20 @@ pipeline {
                 }
         }
 
-        stage('Deploy DEV') {
-            steps {
-                sh '''
-                    export BUILD_NUMBER=${BUILD_NUMBER}
+       stage('Deploy DEV') {
+           steps {
+               sh '''
+                   export BUILD_NUMBER=${BUILD_NUMBER}
 
-                    docker compose down
+                   docker compose config
 
-                    docker compose up -d
-                '''
-            }
-        }
+                   docker compose up -d \
+                       --no-deps \
+                       --force-recreate \
+                       ms-demo
+               '''
+           }
+       }
     }
 
     post {
