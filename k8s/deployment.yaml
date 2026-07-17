@@ -24,7 +24,7 @@ spec:
 
         - name: ms-demo
 
-          image: ms-demo:30
+          image: ms-demo-jenkins:latest
 
           imagePullPolicy: Never
 

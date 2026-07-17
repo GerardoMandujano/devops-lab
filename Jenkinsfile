@@ -78,13 +78,24 @@ pipeline {
                     set -e
 
                     IMAGE="ms-demo-jenkins:${BUILD_NUMBER}"
+                    TAR_FILE="/tmp/ms-demo-jenkins-${BUILD_NUMBER}.tar"
 
                     echo "Desplegando ${IMAGE}"
 
-                    docker save "${IMAGE}" | \
-                        docker exec -i minikube ctr \
+                    docker image inspect "${IMAGE}" > /dev/null
+
+                    docker save -o "${TAR_FILE}" "${IMAGE}"
+
+                    docker cp "${TAR_FILE}" \
+                        minikube:"${TAR_FILE}"
+
+                    docker exec minikube ctr \
                         --namespace=k8s.io \
-                        images import -
+                        images import "${TAR_FILE}"
+
+                    docker exec minikube ctr \
+                        --namespace=k8s.io \
+                        images list | grep "ms-demo-jenkins:${BUILD_NUMBER}"
 
                     kubectl apply -f k8s/
 
@@ -96,9 +107,10 @@ pipeline {
                         -n dev \
                         --timeout=180s
 
-                    kubectl get deployments -n dev
                     kubectl get pods -n dev
-                    kubectl get services -n dev
+
+                    rm -f "${TAR_FILE}"
+                    docker exec minikube rm -f "${TAR_FILE}"
                 '''
             }
         }
