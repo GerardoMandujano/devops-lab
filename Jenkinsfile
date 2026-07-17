@@ -61,6 +61,14 @@ pipeline {
                 '''
             }
         }
+        stage('Aprobación para desplegar') {
+            steps {
+                input(
+                    message: '¿Deseas desplegar esta versión?',
+                    ok: 'Desplegar'
+                )
+            }
+        }
 
         stage('Deploy DEV') {
             steps {
