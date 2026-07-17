@@ -73,20 +73,30 @@ pipeline {
                 }
         }
 
-       stage('Desplegando a Dev') {
-           steps {
-               sh '''
-                   export BUILD_NUMBER=${BUILD_NUMBER}
 
-                   docker compose config
+    stage('Desplegando a Kubernetes Dev') {
+        steps {
+            sh '''
+                echo "Desplegando ms-demo-jenkins:${BUILD_NUMBER}"
 
-                   docker compose up -d \
-                       --no-deps \
-                       --force-recreate \
-                       ms-demo
-               '''
-           }
-       }
+                minikube image load ms-demo-jenkins:${BUILD_NUMBER}
+
+                kubectl apply -f k8s/
+
+                kubectl set image deployment/ms-demo \
+                    ms-demo=ms-demo-jenkins:${BUILD_NUMBER} \
+                    -n dev
+
+                kubectl rollout status deployment/ms-demo \
+                    -n dev \
+                    --timeout=180s
+
+                kubectl get deployments -n dev
+                kubectl get pods -n dev
+                kubectl get services -n dev
+            '''
+        }
+    }
     }
 
     post {
