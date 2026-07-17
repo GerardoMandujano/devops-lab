@@ -73,7 +73,7 @@ pipeline {
                 }
         }
 
-       stage('Deploy DEV') {
+       stage('Desplegando a Dev') {
            steps {
                sh '''
                    export BUILD_NUMBER=${BUILD_NUMBER}
