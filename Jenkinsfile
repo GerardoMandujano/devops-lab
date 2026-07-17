@@ -25,13 +25,13 @@ pipeline {
             }
         }
 
-        stage('Build and Test') {
+        stage('Construyendo') {
             steps {
                 sh './mvnw clean verify'
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Analisis SonarQube') {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
@@ -43,7 +43,7 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
+        stage('Validando rating') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
@@ -51,7 +51,7 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Construyendo imagen Docker') {
             steps {
                 sh '''
                     docker build \
@@ -70,7 +70,7 @@ pipeline {
             }
         }
 
-        stage('Deploy DEV') {
+        stage('Desplegando a dev') {
             steps {
                 sh '''
                     docker rm -f ms-demo-jenkins-dev 2>/dev/null || true
