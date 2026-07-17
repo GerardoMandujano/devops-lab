@@ -7,57 +7,62 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Analizando proyecto') {
+        stage('Preparar entorno') {
             steps {
-                sh 'chmod +x mvnw'
-                sh 'java -version'
-                sh './mvnw --version'
+                sh '''
+                    chmod +x mvnw
+                    java -version
+                    ./mvnw --version
+                    docker --version
+                '''
             }
         }
 
-        stage('Contruyendo') {
+        stage('Build and Test') {
             steps {
                 sh './mvnw clean verify'
             }
         }
 
-        stage('Analizando codigo') {
+        stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
                         ./mvnw sonar:sonar \
-                        -Dsonar.projectKey=ms-demo-jenkins \
-                        -Dsonar.projectName=ms-demo-jenkins
+                          -Dsonar.projectKey=ms-demo-jenkins \
+                          -Dsonar.projectName=ms-demo-jenkins
                     '''
                 }
             }
         }
 
-        stage('Analisis de codigo ok') {
+        stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
-        stage('Construyendo imagen Docker') {
+
+        stage('Build Docker Image') {
             steps {
                 sh '''
-
-                     \
+                    docker build \
                       -t ms-demo-jenkins:${BUILD_NUMBER} \
                       -t ms-demo-jenkins:latest \
                       .
                 '''
             }
         }
-        stage('Desplegando a DEV') {
+
+        stage('Deploy DEV') {
             steps {
                 sh '''
                     docker rm -f ms-demo-jenkins-dev 2>/dev/null || true
@@ -70,16 +75,26 @@ pipeline {
                 '''
             }
         }
-
     }
 
     post {
         success {
-            echo 'Pipeline completado: build, pruebas y análisis aprobados.'
+            echo """
+                Pipeline completado correctamente.
+
+                Imagen generada:
+                ms-demo-jenkins:${BUILD_NUMBER}
+
+                Contenedor desplegado:
+                ms-demo-jenkins-dev
+
+                Aplicación:
+                http://localhost:8081
+            """
         }
 
         failure {
-            echo 'El pipeline falló. Revisa las pruebas o el Quality Gate.'
+            echo 'El pipeline falló. Revisa la etapa marcada en rojo.'
         }
 
         always {
