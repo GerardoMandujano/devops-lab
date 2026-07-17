@@ -78,39 +78,30 @@ pipeline {
                     set -e
 
                     IMAGE="ms-demo-jenkins:${BUILD_NUMBER}"
-                    K8S_IMAGE="docker.io/library/ms-demo-jenkins:${BUILD_NUMBER}"
 
-                    echo "Desplegando ${K8S_IMAGE}"
+                    echo "Desplegando ${IMAGE}"
 
-                    # Confirma que la imagen fue construida por Jenkins
                     docker image inspect "${IMAGE}" > /dev/null
 
-                    # Importa la imagen directamente al Containerd de Minikube
-                    docker save "${IMAGE}" | \
-                        docker exec -i minikube ctr \
-                        --namespace=k8s.io \
-                        images import -
+                    minikube image load "${IMAGE}" \
+                        --profile=minikube
 
-                    # Confirma que Minikube realmente reconoce la etiqueta
-                    docker exec minikube ctr \
-                        --namespace=k8s.io \
-                        images inspect "${K8S_IMAGE}"
+                    echo "Verificando imagen en Minikube"
 
-                    # Confirma que también aparece desde la interfaz CRI de Kubernetes
-                    docker exec minikube crictl images | grep ms-demo-jenkins
+                    minikube image ls \
+                        --profile=minikube | grep "ms-demo-jenkins:${BUILD_NUMBER}"
 
                     kubectl apply -f k8s/
 
-                    # Usa el nombre completo registrado en Containerd
                     kubectl set image deployment/ms-demo \
-                        ms-demo="${K8S_IMAGE}" \
+                        ms-demo="${IMAGE}" \
                         -n dev
 
                     kubectl rollout status deployment/ms-demo \
                         -n dev \
                         --timeout=180s
 
-                    kubectl get pods -n dev -o wide
+                    kubectl get pods -n dev
                 '''
             }
         }
