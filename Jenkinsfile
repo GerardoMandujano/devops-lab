@@ -39,7 +39,7 @@ pipeline {
             }
         }
 
-        stage('Analicis de codigo ok') {
+        stage('Analisis de codigo ok') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
