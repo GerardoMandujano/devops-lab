@@ -73,19 +73,16 @@ pipeline {
                 }
         }
 
-        stage('Desplegando a dev') {
+        stage('Deploy DEV') {
             steps {
                 sh '''
-                    docker rm -f ms-demo-jenkins-dev 2>/dev/null || true
+                    export BUILD_NUMBER=${BUILD_NUMBER}
 
-                    docker run -d \
-                      --name ms-demo-jenkins-dev \
-                      --restart unless-stopped \
-                      -p 8081:8080 \
-                      ms-demo-jenkins:${BUILD_NUMBER}
+                    docker compose down
+
+                    docker compose up -d
                 '''
             }
-        }
     }
 
     post {
