@@ -72,31 +72,39 @@ pipeline {
                     }
                 }
         }
+        stage('Desplegando a Kubernetes Dev') {
+            steps {
+                sh '''
+                    set -e
 
+                    IMAGE="ms-demo-jenkins:${BUILD_NUMBER}"
 
-    stage('Desplegando a Kubernetes Dev') {
-        steps {
-            sh '''
-                echo "Desplegando ms-demo-jenkins:${BUILD_NUMBER}"
+                    echo "Desplegando ${IMAGE}"
 
-                minikube image load ms-demo-jenkins:${BUILD_NUMBER}
+                    docker save "${IMAGE}" | \
+                        docker exec -i minikube ctr \
+                        --namespace=k8s.io \
+                        images import -
 
-                kubectl apply -f k8s/
+                    kubectl apply -f k8s/
 
-                kubectl set image deployment/ms-demo \
-                    ms-demo=ms-demo-jenkins:${BUILD_NUMBER} \
-                    -n dev
+                    kubectl set image deployment/ms-demo \
+                        ms-demo="${IMAGE}" \
+                        -n dev
 
-                kubectl rollout status deployment/ms-demo \
-                    -n dev \
-                    --timeout=180s
+                    kubectl rollout status deployment/ms-demo \
+                        -n dev \
+                        --timeout=180s
 
-                kubectl get deployments -n dev
-                kubectl get pods -n dev
-                kubectl get services -n dev
-            '''
+                    kubectl get deployments -n dev
+                    kubectl get pods -n dev
+                    kubectl get services -n dev
+                '''
+            }
         }
-    }
+
+
+
     }
 
     post {
