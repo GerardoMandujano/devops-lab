@@ -62,12 +62,15 @@ pipeline {
             }
         }
         stage('Aprobación para desplegar') {
-            steps {
-                input(
-                    message: '¿Deseas desplegar esta versión?',
-                    ok: 'Desplegar'
-                )
-            }
+             steps {
+                    timeout(time: 15, unit: 'MINUTES') {
+                        input(
+                            message: "¿Desplegar ms-demo-jenkins:${BUILD_NUMBER} a DEV?",
+                            ok: 'Desplegar',
+                            submitter: 'gerardo,admin'
+                        )
+                    }
+                }
         }
 
         stage('Desplegando a dev') {
