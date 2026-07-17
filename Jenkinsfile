@@ -15,46 +15,59 @@ pipeline {
 
         stage('Environment') {
             steps {
+                sh 'chmod +x mvnw'
                 sh 'java -version'
                 sh './mvnw --version'
             }
         }
 
-        stage('Compile') {
+        stage('Build and Test') {
             steps {
-                sh './mvnw clean compile'
+                sh './mvnw clean verify'
             }
         }
 
-        stage('Test') {
+        stage('SonarQube Analysis') {
             steps {
-                sh './mvnw test'
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                        ./mvnw sonar:sonar \
+                        -Dsonar.projectKey=ms-demo-jenkins \
+                        -Dsonar.projectName=ms-demo-jenkins
+                    '''
+                }
             }
         }
 
-        stage('Package') {
+        stage('Quality Gate') {
             steps {
-                sh './mvnw package -DskipTests'
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'La aplicación se compiló correctamente.'
+            echo 'Pipeline completado: build, pruebas y análisis aprobados.'
         }
 
         failure {
-            echo 'El pipeline falló. Revisa la etapa marcada en rojo.'
+            echo 'El pipeline falló. Revisa las pruebas o el Quality Gate.'
         }
 
         always {
-            junit allowEmptyResults: true,
-                  testResults: '**/target/surefire-reports/*.xml'
+            junit(
+                allowEmptyResults: true,
+                testResults: '**/target/surefire-reports/*.xml'
+            )
 
-            archiveArtifacts allowEmptyArchive: true,
-                             artifacts: '**/target/*.jar',
-                             fingerprint: true
+            archiveArtifacts(
+                allowEmptyArchive: true,
+                artifacts: '**/target/*.jar',
+                fingerprint: true
+            )
         }
     }
 }
