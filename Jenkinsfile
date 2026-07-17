@@ -72,7 +72,7 @@ pipeline {
                     }
                 }
         }
-        stage('Desplegando a Kubernetes Dev') {
+        stage('Desplegar en Kubernetes Dev') {
             steps {
                 sh '''
                     set -e
@@ -81,27 +81,33 @@ pipeline {
 
                     echo "Desplegando ${IMAGE}"
 
+                    echo "1. Verificando imagen construida en Docker..."
                     docker image inspect "${IMAGE}" > /dev/null
 
-                    minikube image load "${IMAGE}" \
-                        --profile=minikube
+                    echo "2. Cargando imagen en el Docker interno de Minikube..."
+                    docker save "${IMAGE}" | \
+                        docker exec -i minikube docker load
 
-                    echo "Verificando imagen en Minikube"
+                    echo "3. Verificando imagen dentro de Minikube..."
+                    docker exec minikube docker image inspect "${IMAGE}" > /dev/null
+                    docker exec minikube docker images | grep ms-demo-jenkins
 
-                    minikube image ls \
-                        --profile=minikube | grep "ms-demo-jenkins:${BUILD_NUMBER}"
-
+                    echo "4. Aplicando manifiestos de Kubernetes..."
                     kubectl apply -f k8s/
 
+                    echo "5. Actualizando imagen del Deployment..."
                     kubectl set image deployment/ms-demo \
                         ms-demo="${IMAGE}" \
                         -n dev
 
+                    echo "6. Esperando a que termine el rollout..."
                     kubectl rollout status deployment/ms-demo \
                         -n dev \
                         --timeout=180s
 
-                    kubectl get pods -n dev
+                    echo "7. Estado final..."
+                    kubectl get pods -n dev -o wide
+                    kubectl get services -n dev
                 '''
             }
         }
