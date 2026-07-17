@@ -78,9 +78,9 @@ pipeline {
                 sh '''
                     export BUILD_NUMBER=${BUILD_NUMBER}
 
-                    docker-compose down
+                    docker compose down
 
-                    docker-compose up -d
+                    docker compose up -d
                 '''
             }
         }
