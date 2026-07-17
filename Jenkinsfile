@@ -13,7 +13,7 @@ pipeline {
             }
         }
 
-        stage('Environment') {
+        stage('Analizando proyecto') {
             steps {
                 sh 'chmod +x mvnw'
                 sh 'java -version'
@@ -21,13 +21,13 @@ pipeline {
             }
         }
 
-        stage('Build and Test') {
+        stage('Contruyendo') {
             steps {
                 sh './mvnw clean verify'
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('Analizando codigo') {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     sh '''
@@ -39,7 +39,7 @@ pipeline {
             }
         }
 
-        stage('Quality Gate') {
+        stage('Analicis de codigo ok') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
