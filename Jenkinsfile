@@ -46,6 +46,17 @@ pipeline {
                 }
             }
         }
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build \
+                      -t ms-demo-jenkins:${BUILD_NUMBER} \
+                      -t ms-demo-jenkins:latest \
+                      .
+                '''
+            }
+        }
+
     }
 
     post {
