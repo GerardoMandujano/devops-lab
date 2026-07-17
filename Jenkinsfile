@@ -46,13 +46,27 @@ pipeline {
                 }
             }
         }
-        stage('Build Docker Image') {
+        stage('Construyendo imagen Docker') {
             steps {
                 sh '''
-                    docker build \
+
+                     \
                       -t ms-demo-jenkins:${BUILD_NUMBER} \
                       -t ms-demo-jenkins:latest \
                       .
+                '''
+            }
+        }
+        stage('Desplegando a DEV') {
+            steps {
+                sh '''
+                    docker rm -f ms-demo-jenkins-dev 2>/dev/null || true
+
+                    docker run -d \
+                      --name ms-demo-jenkins-dev \
+                      --restart unless-stopped \
+                      -p 8081:8080 \
+                      ms-demo-jenkins:${BUILD_NUMBER}
                 '''
             }
         }
