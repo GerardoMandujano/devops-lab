@@ -78,39 +78,39 @@ pipeline {
                     set -e
 
                     IMAGE="ms-demo-jenkins:${BUILD_NUMBER}"
-                    TAR_FILE="/tmp/ms-demo-jenkins-${BUILD_NUMBER}.tar"
+                    K8S_IMAGE="docker.io/library/ms-demo-jenkins:${BUILD_NUMBER}"
 
-                    echo "Desplegando ${IMAGE}"
+                    echo "Desplegando ${K8S_IMAGE}"
 
+                    # Confirma que la imagen fue construida por Jenkins
                     docker image inspect "${IMAGE}" > /dev/null
 
-                    docker save -o "${TAR_FILE}" "${IMAGE}"
+                    # Importa la imagen directamente al Containerd de Minikube
+                    docker save "${IMAGE}" | \
+                        docker exec -i minikube ctr \
+                        --namespace=k8s.io \
+                        images import -
 
-                    docker cp "${TAR_FILE}" \
-                        minikube:"${TAR_FILE}"
-
+                    # Confirma que Minikube realmente reconoce la etiqueta
                     docker exec minikube ctr \
                         --namespace=k8s.io \
-                        images import "${TAR_FILE}"
+                        images inspect "${K8S_IMAGE}"
 
-                    docker exec minikube ctr \
-                        --namespace=k8s.io \
-                        images list | grep "ms-demo-jenkins:${BUILD_NUMBER}"
+                    # Confirma que también aparece desde la interfaz CRI de Kubernetes
+                    docker exec minikube crictl images | grep ms-demo-jenkins
 
                     kubectl apply -f k8s/
 
+                    # Usa el nombre completo registrado en Containerd
                     kubectl set image deployment/ms-demo \
-                        ms-demo="${IMAGE}" \
+                        ms-demo="${K8S_IMAGE}" \
                         -n dev
 
                     kubectl rollout status deployment/ms-demo \
                         -n dev \
                         --timeout=180s
 
-                    kubectl get pods -n dev
-
-                    rm -f "${TAR_FILE}"
-                    docker exec minikube rm -f "${TAR_FILE}"
+                    kubectl get pods -n dev -o wide
                 '''
             }
         }
