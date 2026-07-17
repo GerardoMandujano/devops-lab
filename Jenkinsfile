@@ -83,6 +83,7 @@ pipeline {
                     docker compose up -d
                 '''
             }
+        }
     }
 
     post {
